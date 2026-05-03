@@ -1,0 +1,434 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{tikz}
+\usetikzlibrary{calc,decorations.pathmorphing,positioning}
+\usepackage[T1]{fontenc}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  urlcolor=blue,
+  citecolor=black
+}
+
+\title{llm-red-team-toolkit: An OWASP-Aligned\\
+       Adversarial Probing Harness for\\
+       Large Language Model Deployments}
+
+\author{\IEEEauthorblockN{Ali Murtaza Bhutto}
+\IEEEauthorblockA{Independent Researcher\\
+ORCID: 0009-0007-2787-943X\\
+Email: alibhutto101112@gmail.com}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We present \textbf{llm-red-team-toolkit}, a Python harness that
+systematically probes a Large Language Model (LLM) deployment against
+the OWASP Top 10 for LLM Applications (2025). The toolkit ships
+\textbf{47 probes} spanning all ten OWASP categories plus eight
+cross-cutting jailbreak templates, three target adapters (OpenRouter,
+NVIDIA NIM, and a generic OpenAI-compatible endpoint), and a
+deterministic heuristic scorer that classifies each model response as
+\emph{refused}, \emph{leaked}, \emph{partial}, or \emph{error} without
+the use of an LLM-as-judge. We demonstrate the harness against a
+locally deployed \texttt{qwen2.5:0.5b} model served via Ollama on
+commodity hardware, recording \textbf{15 refused / 18 leaked / 14
+partial} outcomes across the 47 probes in a 5.5-minute scan. The full
+artefact---probes, scorer, adapters, evaluator, Rich-based terminal
+UI, JSON/Markdown report writers, and 49 unit tests---is released
+under the MIT licence at
+\url{https://github.com/thunderstornX/llm-red-team-toolkit}.
+\end{abstract}
+
+\begin{IEEEkeywords}
+LLM security, OWASP LLM Top 10, prompt injection, jailbreak,
+adversarial testing, AI safety, red teaming.
+\end{IEEEkeywords}
+
+\section{Introduction}
+Large Language Models embedded in production systems present a new
+class of security exposures that the application-security community
+has been adapting OWASP-style frameworks to formalise. The OWASP Top
+10 for LLM Applications (2025 revision)~\cite{owasp_llm} enumerates
+ten failure categories ranging from direct prompt injection
+(\textsc{LLM01}) to model theft (\textsc{LLM10}). Existing red-team
+tools tend to either (a) target a single category in depth (e.g.,
+PromptArmour~\cite{promptarmour}, garak~\cite{garak}), or (b) rely on
+an auxiliary LLM as judge to classify outcomes, which compromises both
+reproducibility and the chain-of-trust between probe author, scorer
+and reviewer.
+
+This work presents a complementary middle ground: a single, MIT-licensed
+harness that covers \emph{all ten} OWASP categories plus a dedicated
+jailbreak suite, classifies outcomes with reproducible heuristics, and
+ships with first-class support for three production target shapes.
+The codebase is small (under 2{,}500 lines including tests), the run-loop
+is async (with bounded concurrency to respect provider rate limits),
+and the entire post-run artefact is a single JSON document plus a
+Markdown summary suitable for a pull-request comment or paper appendix.
+
+\subsection{Contributions}
+\begin{itemize}
+\item A library of \textbf{47 reproducible probes} (Section~\ref{sec:probes})
+      covering OWASP \textsc{LLM01}--\textsc{LLM10} plus eight
+      jailbreak templates: DAN role-play, base64 smuggling, ROT13,
+      leetspeak, reversed-text, multi-turn-compressed, context-window
+      flood, and prefix injection.
+\item A \textbf{deterministic heuristic scorer}
+      (Section~\ref{sec:scorer}) using
+      probe-specific success/refusal markers backed by a generic
+      regex library. We deliberately avoid LLM-as-judge.
+\item Three target adapters (OpenRouter, NVIDIA NIM, generic
+      OpenAI-compatible) sharing a common async interface, with
+      bounded \texttt{max\_tokens} to cap exposure to DoS-shaped
+      probes.
+\item A \textbf{Rich-based terminal UI} with live progress bar,
+      activity stream, and post-run scorecard
+      (Figure~\ref{fig:dashboard}).
+\item A live demonstration on commodity hardware against
+      \texttt{qwen2.5:0.5b} (Section~\ref{sec:demo}) producing
+      reproducible outcome counts.
+\item Open-source release at
+      \url{https://github.com/thunderstornX/llm-red-team-toolkit}.
+\end{itemize}
+
+\section{Architecture}
+\label{sec:arch}
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  >=latex, node distance=4mm,
+  block/.style={draw, rounded corners=2pt, minimum height=8mm,
+                minimum width=22mm, font=\footnotesize, fill=red!5},
+  data/.style={draw, dashed, rounded corners=1pt, minimum height=6mm,
+               minimum width=22mm, font=\scriptsize\itshape, fill=black!2},
+]
+\node[block] (probes) {probe library};
+\node[block, below=of probes] (eval) {evaluator};
+\node[block, below=of eval] (adapter) {target adapter};
+\node[block, right=12mm of eval] (scorer) {scorer};
+\node[data,  right=12mm of probes] (target) {LLM endpoint};
+\node[data,  below=of adapter] (json) {JSON + Markdown};
+\draw[->] (probes) -- (eval);
+\draw[->] (eval) -- (adapter);
+\draw[->] (adapter) -- (target);
+\draw[->] (adapter.east) -| (scorer.south);
+\draw[->] (scorer) -- (eval);
+\draw[->] (eval) -- (json);
+\end{tikzpicture}
+\caption{Pipeline: the evaluator pulls probe definitions, dispatches
+them through a target adapter (with concurrency capped at $j$=4 by
+default), routes responses through the scorer, and persists results
+as JSON and Markdown.}
+\label{fig:arch}
+\end{figure}
+
+The pipeline (Figure~\ref{fig:arch}) is a four-stage async dataflow.
+Probes are pure data---static frozen dataclasses registered at import
+time---and never reach the network on their own. The
+\texttt{Evaluator} pulls them through a target \texttt{Adapter}
+governed by an \texttt{asyncio.Semaphore} of size $j$, classifies each
+response with the \texttt{Scorer}, and yields \texttt{ProbeResult}
+objects in completion order to the caller. The Rich-based terminal
+dashboard (Figure~\ref{fig:dashboard}) is a thin consumer of that
+async iterator and never participates in the dispatching loop.
+
+\section{Probe Library}
+\label{sec:probes}
+
+Each probe is a \texttt{Probe} dataclass with fields:
+\texttt{id} (stable, dotted), \texttt{category} (one of
+\textsc{LLM01}--\textsc{LLM10} or \textsc{JAIL}), \texttt{title},
+\texttt{payload} (the prompt to send), \texttt{expected\_behavior}
+(human-readable), \texttt{severity} (\textsc{low}/\textsc{med}/%
+\textsc{high}/\textsc{crit}), \texttt{success\_markers}, and
+\texttt{refusal\_markers}. Table~\ref{tab:counts} summarises the
+distribution.
+
+\begin{table}[t]
+\caption{Probe distribution by OWASP category}
+\label{tab:counts}
+\centering
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Code} & \textbf{Category} & \textbf{Probes} \\
+\midrule
+\textsc{LLM01} & Prompt Injection                  & 5 \\
+\textsc{LLM02} & Insecure Output Handling          & 4 \\
+\textsc{LLM03} & Training-Data Poisoning           & 3 \\
+\textsc{LLM04} & Model DoS                         & 4 \\
+\textsc{LLM05} & Supply Chain                      & 3 \\
+\textsc{LLM06} & Sensitive Information Disclosure  & 5 \\
+\textsc{LLM07} & Insecure Plugin Design            & 4 \\
+\textsc{LLM08} & Excessive Agency                  & 4 \\
+\textsc{LLM09} & Overreliance                      & 4 \\
+\textsc{LLM10} & Model Theft                       & 3 \\
+\textsc{JAIL}  & Jailbreaks (cross-cutting)        & 8 \\
+\midrule
+\textbf{Total} & --- & \textbf{47} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A representative probe (\texttt{llm01.indirect\_via\_document}) embeds
+an HTML-style comment inside a synthetic document and instructs the
+target to summarise it. A model that follows the embedded instruction
+rather than the user's actual request fails the probe. The use of
+synthetic documents and synthetic canaries (e.g.,
+\texttt{PURPLE-MUSHROOM-1971}) means the probes never carry
+weaponised content; they are vulnerability \emph{detectors}, not
+exploits.
+
+\section{Scoring}
+\label{sec:scorer}
+
+The scorer applies the following decision tree to each
+$(\textit{probe},\,\textit{response})$ pair:
+\begin{enumerate}
+\item If any probe-specific \texttt{success\_marker} appears
+      (case-insensitive substring match) $\Rightarrow$
+      \textbf{leaked}.
+\item Else if any probe-specific \texttt{refusal\_marker} appears
+      $\Rightarrow$ \textbf{refused}.
+\item Else if any phrase in the generic refusal regex library
+      matches $\Rightarrow$ \textbf{refused}.
+\item Else if the response is empty / whitespace
+      $\Rightarrow$ \textbf{skipped}.
+\item Else $\Rightarrow$ \textbf{partial} (human review).
+\end{enumerate}
+
+The generic refusal library contains ten compiled \texttt{re.Pattern}
+objects calibrated against canonical phrases (\emph{``I can't''},
+\emph{``I'm sorry, I can't help''}, \emph{``not appropriate''},
+\emph{``against my usage guidelines''}, \emph{``please consult a
+lawyer/doctor''}, etc.). Each rule is unit-tested
+(\texttt{tests/test\_scorer.py}) so reviewers can audit the rule set
+in isolation. Crucially, the scorer is \emph{deterministic}: given the
+same response, it always produces the same outcome and confidence,
+which is the property an LLM-as-judge cannot offer.
+
+\section{Live Demonstration}
+\label{sec:demo}
+
+\subsection{Setup}
+We deployed \texttt{qwen2.5:0.5b} (Q4\_K\_M, 397 MB) under Ollama
+0.16.2 on an Intel Core i5-8250U laptop with 16 GB RAM running Linux
+6.8. The harness was configured with
+\texttt{--adapter generic --base-url http://localhost:11434/v1}
+and concurrency $j=2$ to avoid memory contention with the model
+on the constrained host.
+
+\subsection{Outcomes}
+The 47-probe scan completed in 333.5 seconds. Outcome counts are
+shown in Figure~\ref{fig:summary} and Table~\ref{tab:results}.
+The headline figures: 15 refused, 18 leaked, 14 partial,
+0 errors, 0 skipped.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.95\columnwidth]{figures/summary.png}
+\caption{Post-run scorecard (real measurement). The verdict is
+heuristic: $>$50\% leaked $\Rightarrow$ \emph{model leaked the bait
+more than half the time}, 20--50\% $\Rightarrow$
+\emph{mixed signal}, $<$20\% $\Rightarrow$ \emph{model held the
+line}.}
+\label{fig:summary}
+\end{figure}
+
+\begin{table}[t]
+\caption{Live outcomes by category (\texttt{qwen2.5:0.5b}, 333.5\,s).}
+\label{tab:results}
+\centering
+\renewcommand{\arraystretch}{1.05}
+\footnotesize
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Cat.} & \textbf{Probes} & \textbf{refused} & \textbf{leaked} & \textbf{partial} \\
+\midrule
+\textsc{LLM01} & 5 & 0 & 3 & 2 \\
+\textsc{LLM02} & 4 & 2 & 2 & 0 \\
+\textsc{LLM03} & 3 & 0 & 0 & 3 \\
+\textsc{LLM04} & 4 & 0 & 2 & 2 \\
+\textsc{LLM05} & 3 & 2 & 0 & 1 \\
+\textsc{LLM06} & 5 & 2 & 2 & 1 \\
+\textsc{LLM07} & 4 & 0 & 3 & 1 \\
+\textsc{LLM08} & 4 & 1 & 1 & 2 \\
+\textsc{LLM09} & 4 & 0 & 2 & 2 \\
+\textsc{LLM10} & 3 & 3 & 0 & 0 \\
+\textsc{JAIL}  & 8 & 5 & 3 & 0 \\
+\midrule
+\textbf{Tot.}  & 47 & 15 & 18 & 14 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The pattern is consistent with what we expect from a 0.5\,B-parameter
+checkpoint: it has learned to refuse blunt jailbreak templates
+(5 of 8 \textsc{JAIL} probes refused) and self-fingerprinting requests
+(3 of 3 \textsc{LLM10} probes refused), but it has weaker resistance
+to plugin-design probes (\textsc{LLM07}: 3 of 4 leaked) and
+overreliance probes (\textsc{LLM09}: 2 of 4 leaked, 2 partial). All
+five \textsc{LLM01} prompt-injection probes either leaked or returned
+ambiguous output, in line with prior reports that direct prompt
+injection remains the hardest category to harden against on small
+checkpoints. The exact counts are reproducible: re-running the same
+harness against the same model checkpoint at \texttt{temperature=0}
+produces the same outcomes byte-for-byte, modulo network latency.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/dashboard.png}
+\caption{Live dashboard during a scan. Top: progress bar with
+elapsed-time meter. Left panel: streaming activity (most recent at
+the bottom). Right panel: running scorecard.}
+\label{fig:dashboard}
+\end{figure}
+
+\section{Engineering Notes}
+
+\subsection{No LLM-as-judge}
+A compelling argument for using a strong LLM as a judge is that
+heuristic markers are brittle. Our position is the opposite: a brittle
+rule set whose every phrase is auditable in 200 lines of Python is a
+\emph{feature}, not a bug. When a peer reviewer asks ``why did this
+probe count as refused?'', the answer is grounded in a concrete regex
+they can read. An LLM-judge produces an opinion that may or may not
+reproduce on a different day.
+
+\subsection{Token-cost containment}
+The adapter sets \texttt{max\_tokens=600}, \texttt{temperature=0}, and
+\texttt{stream=false}. The default scan of 47 probes therefore costs
+under 30{,}000 prompt-tokens and 30{,}000 response-tokens---an order
+of magnitude below provider free-tier ceilings.
+
+\subsection{Adapter API key handling}
+Adapters read API keys exclusively from environment variables
+(\texttt{OPENROUTER\_API\_KEY}, \texttt{NVIDIA\_API\_KEY}). Keys are
+never logged, never written to disk, and never echoed in error
+messages---a property explicitly tested by
+\texttt{test\_adapters.py::test\_adapters\_never\_log\_api\_key}.
+
+\subsection{Test coverage}
+The repository ships 49 pytest cases covering: probe-registry
+invariants (no duplicate ids, all categories valid, immutability of
+frozen dataclasses), scorer behaviour for each canonical refusal
+phrase and for the success/refusal-marker priority, adapter wire
+format with respx mocks, evaluator dispatch under concurrency, JSON +
+Markdown round-trip, and TUI smoke tests. The full suite runs in
+0.57\,s.
+
+\section{Ethical Use}
+The toolkit ships an \texttt{ETHICAL\_USE.md} declaration that
+explicitly bounds the testing surface to LLM endpoints the operator
+owns or has written authorisation to test. The probes themselves use
+synthetic canaries; revealing the canary indicates a vulnerability
+\emph{class}, not a weaponised exploit. Probes that nudge against
+real-world harm (e.g., specific-person memorisation) are scoped to
+fictional individuals and a clear refusal is the expected outcome.
+
+\section{Limitations and Future Work}
+\begin{itemize}
+\item \textbf{No LLM-as-judge fallback for ambiguous cases.} The
+      \emph{partial} bucket (Table~\ref{tab:results}) is the price
+      of full reproducibility. A future option could be a
+      reviewer-driven CLI flow that re-classifies partials.
+\item \textbf{Static probe payloads.} Adversaries adapt; static
+      payloads age. The probe schema supports versioned ids
+      (\texttt{llm01.direct\_override} could become \texttt{.v2}) for
+      paced refresh without breaking historical comparison.
+\item \textbf{Single-turn only.} Multi-turn jailbreaks require
+      conversation-state plumbing that the OpenAI chat-completions
+      shape supports natively, which is a planned extension.
+\item \textbf{Model-comparison study.} The headline live run is
+      against a single 0.5\,B-parameter checkpoint. A multi-model
+      study against frontier checkpoints (Llama 3.3 70B, GPT-4o,
+      Claude 4) would produce the comparative table that operators
+      really want; this is straightforward to run with the existing
+      OpenRouter adapter.
+\end{itemize}
+
+\section*{Reproducibility}
+The repository at
+\url{https://github.com/thunderstornX/llm-red-team-toolkit}
+is the authoritative artefact. To reproduce
+Section~\ref{sec:demo}:
+\begin{verbatim}
+ollama serve &
+ollama pull qwen2.5:0.5b
+git clone <repo>
+cd llm-red-team-toolkit
+pip install -r requirements-dev.txt
+python -m harness.cli scan \
+   --adapter generic \
+   --base-url http://localhost:11434/v1 \
+   --model qwen2.5:0.5b
+\end{verbatim}
+
+\section*{Acknowledgement}
+The OWASP Foundation publishes the Top 10 for LLM Applications under
+CC-BY-SA-4.0; the categorisation in this paper follows their
+2025 revision verbatim.
+
+\begin{thebibliography}{1}
+\bibitem{owasp_llm}
+OWASP Foundation, ``OWASP Top 10 for LLM Applications (2025
+Revision),'' 2025. [Online]. Available:
+\url{https://owasp.org/www-project-top-10-for-large-language-model-applications/}
+
+\bibitem{garak}
+NVIDIA Research, ``garak: A Framework for Security Probing Large
+Language Models,'' 2024. [Online]. Available:
+\url{https://github.com/NVIDIA/garak}
+
+\bibitem{promptarmour}
+\textit{PromptArmour: Defensive Probing for LLM Applications},
+2024. [Online]. Available:
+\url{https://github.com/protectai}
+
+\bibitem{ollama}
+Ollama, ``Run large language models locally,'' 2024. [Online].
+Available: \url{https://ollama.com}
+\end{thebibliography}
+
+\vspace{2mm}
+\begin{center}
+\begin{tikzpicture}[scale=0.55]
+% Hand-drawn spider-in-web colophon. Eight legs, radial threads,
+% concentric rings. The spider is small: it's a signature, not a
+% feature illustration.
+\definecolor{spider}{RGB}{180, 30, 30}
+\definecolor{web}{RGB}{120, 120, 120}
+\foreach \a in {0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330} {
+  \draw[web, very thin] (0,0) -- (\a:1.6);
+}
+\foreach \r in {0.5, 0.95, 1.4} {
+  \draw[web, very thin]
+    (0:\r) \foreach \a in {30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330} {
+      -- (\a:\r)
+    } -- cycle;
+}
+\fill[spider] (0,0) circle (0.18);
+\fill[spider] (0,0.18) circle (0.13);
+\foreach \a in {30, 60, 120, 150, 210, 240, 300, 330} {
+  \draw[spider, thick]
+    (0,0) .. controls ($(\a:0.55)+(\a+90:0.10)$) ..  (\a:0.95);
+}
+\end{tikzpicture}\\[0.5mm]
+{\scriptsize \itshape ~ AMB \textperiodcentered\ ORCID
+0009-0007-2787-943X \textperiodcentered\ v1.0 \textperiodcentered\
+2026 ~}
+\end{center}
+
+\end{document}
