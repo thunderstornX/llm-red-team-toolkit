@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "llm-red-team-toolkit"
+version = "1.0.0"
+description = "OWASP-aligned adversarial probing harness for LLM deployments"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+  {name = "Ali Murtaza Bhutto", email = "alibhutto101112@gmail.com"},
+]
+keywords = [
+  "LLM security",
+  "red teaming",
+  "OWASP",
+  "prompt injection",
+  "jailbreak",
+  "AI safety",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Information Technology",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Security",
+]
+
+[project.scripts]
+rtt = "harness.cli:app"
+
+[tool.setuptools.packages.find]
+include = ["probes*", "harness*", "adapters*", "tui*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-ra -q"
+
+[tool.bandit]
+exclude_dirs = ["tests", ".venv", "venv"]
+# probes/ contains adversarial *strings* by design; bandit's keyword
+# heuristics will flash on them. We document each finding in code.
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"

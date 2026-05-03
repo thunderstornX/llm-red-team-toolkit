@@ -1,0 +1,31 @@
+cff-version: 1.2.0
+title: "llm-red-team-toolkit"
+message: "If you use this toolkit, please cite it as below."
+type: software
+authors:
+  - given-names: "Ali Murtaza"
+    family-names: "Bhutto"
+    email: "alibhutto101112@gmail.com"
+    orcid: "https://orcid.org/0009-0007-2787-943X"
+repository-code: "https://github.com/thunderstornX/llm-red-team-toolkit"
+url: "https://github.com/thunderstornX/llm-red-team-toolkit"
+license: MIT
+version: "1.0.0"
+date-released: "2026-05-03"
+keywords:
+  - "LLM security"
+  - "red teaming"
+  - "OWASP LLM Top 10"
+  - "prompt injection"
+  - "jailbreak"
+  - "AI safety"
+  - "adversarial testing"
+  - "AI red team"
+abstract: >-
+  A Python toolkit for systematic adversarial probing of LLM
+  deployments against the OWASP Top 10 for LLM Applications (2025).
+  Implements direct and indirect prompt injection payloads, jailbreak
+  templates, and an automated scoring harness that reports
+  per-vulnerability pass/fail rates with refusal detection. Ships with
+  adapters for OpenRouter, NVIDIA NIM, and any OpenAI-compatible
+  endpoint, and a Rich-based TUI for live probe execution.

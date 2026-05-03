@@ -1,0 +1,59 @@
+# --- python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.installed.cfg
+*.egg
+.python-version
+
+# --- venvs ---
+.venv/
+venv/
+env/
+.tox/
+
+# --- editor ---
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# --- caches ---
+.cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+.coverage.*
+
+# --- secrets / runtime ---
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+results/runs/
+results/*.local.*
+
+# --- paper build droppings ---
+paper/*.aux
+paper/*.log
+paper/*.out
+paper/*.toc
+paper/*.bbl
+paper/*.blg
+paper/*.fls
+paper/*.fdb_latexmk
+paper/*.synctex.gz
+
+# --- never commit live keys, even by accident ---
+openrouter.key
+nvidia.key
+*.api.key
