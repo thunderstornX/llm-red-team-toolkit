@@ -1,6 +1,6 @@
 # llm-red-team-toolkit
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX) <!-- DOI placeholder; replaced on first Zenodo deposit -->
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20480444.svg)](https://doi.org/10.5281/zenodo.20480444) <!-- DOI placeholder; replaced on first Zenodo deposit -->
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-49%20passing-brightgreen)](#tests)
 [![Probes](https://img.shields.io/badge/probes-47-red)](#probes)
@@ -268,7 +268,7 @@ and the live demonstration is in
   title     = {llm-red-team-toolkit: An OWASP-aligned adversarial probing
                harness for LLM deployments},
   year      = {2026},
-  doi       = {10.5281/zenodo.XXXXXXX},
+  doi       = {10.5281/zenodo.20480444},
   url       = {https://github.com/thunderstornX/llm-red-team-toolkit},
   orcid     = {0009-0007-2787-943X}
 }
