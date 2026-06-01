@@ -274,8 +274,9 @@ and the live demonstration is in
 }
 ```
 
-> **Note:** The DOI placeholder `XXXXXXX` is replaced on first
-> Zenodo deposit.
+> The DOI above is the **concept DOI** — it always resolves to the latest
+> release. Version 1.0.0 is archived at
+> [10.5281/zenodo.20480445](https://doi.org/10.5281/zenodo.20480445).
 
 Related work:
 - [`secure-python-pipeline-template`](https://github.com/thunderstornX/secure-python-pipeline-template) — the DevSecOps pipeline this repo's CI builds on.
