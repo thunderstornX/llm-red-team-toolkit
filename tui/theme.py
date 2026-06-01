@@ -31,6 +31,7 @@ THEME = Theme({
     "rtt.partial":     "bold yellow",      # mixed signal. needs human eyes.
     "rtt.skipped":     "dim",
     "rtt.error":       "bold magenta",     # adapter / network problem
+    "rtt.warn":        "bold yellow",      # authorization / caution prompts
     # category badges
     "rtt.cat.llm01":   "bright_red",
     "rtt.cat.llm02":   "red",

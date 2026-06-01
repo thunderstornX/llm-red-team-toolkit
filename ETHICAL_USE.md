@@ -19,6 +19,19 @@ practice.
               "we test our own roof, not the neighbour's."
 ```
 
+## Enforcement in the tool
+
+This is policy backed by a runtime gate, not policy-as-prose alone. A
+**live** `rtt scan` refuses to start until you attest authorization:
+
+- pass `--authorized` on the command line, or
+- answer the interactive confirmation prompt, or
+- set `RTT_ASSUME_AUTHORIZED=1` for trusted automation.
+
+In a non-interactive context (CI, pipe) with none of the above, the scan
+exits non-zero without sending a single probe. `--dry-run` is exempt
+because it performs no network I/O.
+
 ## In scope
 
 - LLM endpoints **you** operate.

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import sys
 from pathlib import Path
 from typing import Optional
 
@@ -40,6 +41,34 @@ app = typer.Typer(
     rich_markup_mode="rich",
     no_args_is_help=True,
 )
+
+
+def _require_authorization(target: TargetConfig, authorized: bool) -> None:
+    """Gate a live scan behind an explicit authorization attestation.
+
+    Probing an LLM endpoint you do not control or have written permission
+    to test may be unlawful (see ETHICAL_USE.md). A live scan therefore
+    requires the operator to attest authorization: either pass
+    ``--authorized`` or answer the interactive prompt. Set
+    ``RTT_ASSUME_AUTHORIZED=1`` for trusted non-interactive automation.
+    The check is skipped for ``--dry-run`` (no network I/O occurs)."""
+    if authorized or os.getenv("RTT_ASSUME_AUTHORIZED") == "1":
+        return
+    where = target.base_url or f"{target.adapter}:{target.model}"
+    if not sys.stdin.isatty():
+        console.print(
+            "[rtt.error]Refusing to run a live scan without authorization.[/]\n"
+            f"Target: [bold]{where}[/]. Pass [bold]--authorized[/] (or set "
+            "RTT_ASSUME_AUTHORIZED=1) to attest you are permitted to probe "
+            "this target. See ETHICAL_USE.md.")
+        raise typer.Exit(code=4)
+    console.print(
+        f"[rtt.warn]About to run adversarial probes against [bold]{where}[/].[/]\n"
+        "Only proceed if you own this endpoint or hold written authorization "
+        "to test it (see ETHICAL_USE.md).")
+    if not typer.confirm("I am authorized to probe this target"):
+        console.print("[rtt.error]Aborted: authorization not confirmed.[/]")
+        raise typer.Exit(code=4)
 
 
 def _build_adapter(target: TargetConfig) -> Adapter:
@@ -148,6 +177,12 @@ def cmd_scan(
         True, "--verify-tls/--no-verify-tls",
         help="Validate the upstream TLS cert (off only for local self-signed).",
     ),
+    authorized: bool = typer.Option(
+        False, "--authorized",
+        help="Attest that you are authorized to probe this target. "
+             "Required for a live scan; skip it and you will be prompted. "
+             "See ETHICAL_USE.md.",
+    ),
     quiet: bool = typer.Option(False, "--quiet", "-q",
                                help="Compact banner only."),
 ) -> None:
@@ -184,6 +219,7 @@ def cmd_scan(
             base_url="http://dry-run.local", api_key="not-used",
         )
     else:
+        _require_authorization(target, authorized)
         try:
             adapter_obj = _build_adapter(target)
         except AdapterError as exc:
