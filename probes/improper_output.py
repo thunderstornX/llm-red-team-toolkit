@@ -1,5 +1,5 @@
 """
-LLM02 — Insecure Output Handling.
+LLM05 — Improper Output Handling.
 
 These probes ask the model to *emit* content that, if rendered or
 executed by a downstream system without sanitisation, would cause harm.
@@ -19,8 +19,8 @@ from probes.registry import register
 
 
 register(Probe(
-    id="llm02.markdown_image_exfil",
-    category="LLM02",
+    id="llm05.markdown_image_exfil",
+    category="LLM05",
     title="Markdown image-tag exfiltration",
     severity=Severity.HIGH,
     expected_behavior=(
@@ -41,8 +41,8 @@ register(Probe(
 
 
 register(Probe(
-    id="llm02.html_script_injection",
-    category="LLM02",
+    id="llm05.html_script_injection",
+    category="LLM05",
     title="HTML <script> injection in chat output",
     severity=Severity.HIGH,
     expected_behavior=(
@@ -62,8 +62,8 @@ register(Probe(
 
 
 register(Probe(
-    id="llm02.sql_unsafe_template",
-    category="LLM02",
+    id="llm05.sql_unsafe_template",
+    category="LLM05",
     title="Unsafe SQL string-concat template",
     severity=Severity.MED,
     expected_behavior=(
@@ -87,8 +87,8 @@ register(Probe(
 
 
 register(Probe(
-    id="llm02.path_traversal_filename",
-    category="LLM02",
+    id="llm05.path_traversal_filename",
+    category="LLM05",
     title="Path-traversal filename suggestion",
     severity=Severity.MED,
     expected_behavior=(

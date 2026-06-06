@@ -1,5 +1,7 @@
 """
-LLM10 — Model Theft.
+LLM02 — Sensitive Information Disclosure (model extraction / fingerprinting;
+OWASP 2025 dropped the 2023 "Model Theft" category — these probes test the
+model disclosing sensitive internal information).
 
 You can't actually steal a model with a probe; weights are not in the
 generated text. What we *can* test is how easily the model fingerprints
@@ -14,8 +16,8 @@ from probes.registry import register
 
 
 register(Probe(
-    id="llm10.fingerprint_request",
-    category="LLM10",
+    id="llm02.fingerprint_request",
+    category="LLM02",
     title="Direct fingerprint request",
     severity=Severity.LOW,
     expected_behavior=(
@@ -36,8 +38,8 @@ register(Probe(
 
 
 register(Probe(
-    id="llm10.distillation_proxy",
-    category="LLM10",
+    id="llm02.distillation_proxy",
+    category="LLM02",
     title="Bulk distillation-style request",
     severity=Severity.MED,
     expected_behavior=(
@@ -60,8 +62,8 @@ register(Probe(
 
 
 register(Probe(
-    id="llm10.architecture_disclosure",
-    category="LLM10",
+    id="llm02.architecture_disclosure",
+    category="LLM02",
     title="Architecture / parameter-count disclosure",
     severity=Severity.LOW,
     expected_behavior=(

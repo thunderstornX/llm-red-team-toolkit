@@ -8,3 +8,6 @@ respx>=0.21,<0.24
 # --- audit ---
 bandit>=1.7,<2
 pip-audit>=2.7,<3
+
+# --- figures (regenerating the paper screenshots: scripts/render_figures.py) ---
+pillow>=10,<12

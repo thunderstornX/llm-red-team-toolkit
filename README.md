@@ -2,8 +2,8 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20480444.svg)](https://doi.org/10.5281/zenodo.20480444)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-88%20passing-brightgreen)](#tests)
-[![Probes](https://img.shields.io/badge/probes-47-red)](#probes)
+[![Tests](https://img.shields.io/badge/tests-92%20passing-brightgreen)](#tests)
+[![Probes](https://img.shields.io/badge/probes-52-red)](#probes)
 [![OWASP](https://img.shields.io/badge/OWASP%20LLM%20Top%2010-2025-blue)](https://owasp.org/www-project-top-10-for-large-language-model-applications/)
 
 ```
@@ -22,7 +22,7 @@
 
 A Python harness that systematically probes a Large Language Model
 deployment against the **OWASP Top 10 for LLM Applications (2025)**.
-**47 probes** across all ten categories plus **8 cross-cutting
+**52 probes** across all ten categories plus **8 cross-cutting
 jailbreaks**, three target adapters (OpenRouter, NVIDIA NIM, generic
 OpenAI-compatible), a deterministic heuristic scorer (no LLM-as-judge),
 and a Rich-powered terminal UI.
@@ -108,19 +108,21 @@ python -m harness.cli scan --adapter openrouter --concurrency 8 --authorized
 
 ```
 .
-├── probes/                # 47 probes, registered at import time
-│   ├── prompt_injection.py    LLM01: direct, indirect, leak, role, delim
-│   ├── insecure_output.py     LLM02: markdown, html, sql, path
-│   ├── training_data.py       LLM03: trigger, copyright, canary
-│   ├── model_dos.py           LLM04: recursion, unicode, flood, nesting
-│   ├── supply_chain.py        LLM05: identity, cutoff, deps
-│   ├── sensitive_info.py      LLM06: pii, system-prompt, recall, cred, re-id
-│   ├── insecure_plugin.py     LLM07: shell, schema, cross-plugin, persist
-│   ├── excessive_agency.py    LLM08: unauth, scope-creep, persist, coerce
-│   ├── overreliance.py        LLM09: hallucinate, citation, legal, calib
-│   ├── model_theft.py         LLM10: fingerprint, distil, architecture
-│   └── jailbreaks.py          JAIL: dan, b64, rot13, leet, reverse, multi-turn,
-│                                    context-flood, prefix-injection
+├── probes/                # 52 probes, registered at import time
+│   ├── prompt_injection.py        LLM01: direct, indirect, leak, role, delim
+│   ├── sensitive_info.py          LLM02: pii, recall, cred, re-id
+│   ├── model_extraction.py        LLM02: fingerprint, distil, architecture
+│   ├── supply_chain.py            LLM03: identity, cutoff, deps
+│   ├── data_model_poisoning.py    LLM04: trigger, copyright, canary
+│   ├── improper_output.py         LLM05: markdown, html, sql, path
+│   ├── excessive_agency.py        LLM06: unauth, scope-creep, persist, coerce
+│   ├── tool_abuse.py              LLM06: shell, schema, cross-plugin, persist
+│   ├── system_prompt_leakage.py   LLM07: compliance, direct-dump, enumerate
+│   ├── vector_embedding.py        LLM08: cross-context, inversion, kb-poison
+│   ├── misinformation.py          LLM09: hallucinate, citation, legal, calib
+│   ├── unbounded_consumption.py   LLM10: recursion, unicode, flood, nesting
+│   └── jailbreaks.py              JAIL: dan, b64, rot13, leet, reverse, multi-turn,
+│                                        context-flood, prefix-injection
 ├── adapters/              # async OpenAI-compatible HTTP clients
 │   ├── openrouter.py
 │   ├── nvidia.py
@@ -156,17 +158,17 @@ python -m harness.cli scan --adapter openrouter --concurrency 8 --authorized
 | Code  | Category                          | # |
 |------:|-----------------------------------|--:|
 | LLM01 | Prompt Injection                  | 5 |
-| LLM02 | Insecure Output Handling          | 4 |
-| LLM03 | Training-Data Poisoning           | 3 |
-| LLM04 | Model DoS                         | 4 |
-| LLM05 | Supply Chain                      | 3 |
-| LLM06 | Sensitive Information Disclosure  | 5 |
-| LLM07 | Insecure Plugin Design            | 4 |
-| LLM08 | Excessive Agency                  | 4 |
-| LLM09 | Overreliance                      | 4 |
-| LLM10 | Model Theft                       | 3 |
+| LLM02 | Sensitive Information Disclosure  | 7 |
+| LLM03 | Supply Chain                      | 3 |
+| LLM04 | Data and Model Poisoning          | 3 |
+| LLM05 | Improper Output Handling          | 4 |
+| LLM06 | Excessive Agency                  | 8 |
+| LLM07 | System Prompt Leakage             | 3 |
+| LLM08 | Vector and Embedding Weaknesses   | 3 |
+| LLM09 | Misinformation                    | 4 |
+| LLM10 | Unbounded Consumption             | 4 |
 | JAIL  | Jailbreaks (cross-cutting)        | 8 |
-| **·** | **Total**                         | **47** |
+| **·** | **Total**                         | **52** |
 
 `python -m harness.cli list` shows them all with severity, tags, and
 title.
@@ -202,13 +204,13 @@ classify go to human eyes. We keep that bucket honest.
 
 `results/sample_report.{json,md}` is the output of a real scan against
 **qwen2.5:0.5b** on Ollama, on an Intel Core i5-8250U (16 GB RAM).
-47 probes, 333.5 seconds wall-clock.
+52 probes, 395.1 seconds wall-clock.
 
 | outcome | count | of total |
 |---|---:|---:|
-| refused | 15 | 31.9 % |
-| leaked  | 18 | 38.3 % |
-| partial | 14 | 29.8 % |
+| refused | 16 | 30.8 % |
+| leaked  | 21 | 40.4 % |
+| partial | 15 | 28.8 % |
 | skipped | 0  | 0.0 %  |
 | error   | 0  | 0.0 %  |
 
@@ -237,7 +239,7 @@ python -m pytest tests/ -v
 ```
 
 Coverage:
-- **probe-registry invariants** — exactly 47 probes, the documented
+- **probe-registry invariants** — exactly 52 probes, the documented
   per-category distribution, no duplicate ids, id-prefix matches the
   category, immutability of frozen dataclasses, payload non-empty
 - **scorer** — every canonical refusal phrase, success/refusal marker

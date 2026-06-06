@@ -35,17 +35,17 @@ Email: alibhutto101112@gmail.com}}
 We present \textbf{llm-red-team-toolkit}, a Python harness that
 systematically probes a Large Language Model (LLM) deployment against
 the OWASP Top 10 for LLM Applications (2025). The toolkit ships
-\textbf{47 probes} spanning all ten OWASP categories plus eight
+\textbf{52 probes} spanning all ten OWASP categories plus eight
 cross-cutting jailbreak templates, three target adapters (OpenRouter,
 NVIDIA NIM, and a generic OpenAI-compatible endpoint), and a
 deterministic heuristic scorer that classifies each model response as
 \emph{refused}, \emph{leaked}, \emph{partial}, or \emph{error} without
 the use of an LLM-as-judge. We demonstrate the harness against a
 locally deployed \texttt{qwen2.5:0.5b} model served via Ollama on
-commodity hardware, recording \textbf{15 refused / 18 leaked / 14
-partial} outcomes across the 47 probes in a 5.5-minute scan. The full
+commodity hardware, recording \textbf{16 refused / 21 leaked / 15
+partial} outcomes across the 52 probes in a 6.6-minute scan. The full
 artefact---probes, scorer, adapters, evaluator, Rich-based terminal
-UI, JSON/Markdown report writers, and 49 unit tests---is released
+UI, JSON/Markdown report writers, and 92 unit tests---is released
 under the MIT licence at
 \url{https://github.com/thunderstornX/llm-red-team-toolkit}.
 \end{abstract}
@@ -61,9 +61,9 @@ class of security exposures that the application-security community
 has been adapting OWASP-style frameworks to formalise. The OWASP Top
 10 for LLM Applications (2025 revision)~\cite{owasp_llm} enumerates
 ten failure categories ranging from direct prompt injection
-(\textsc{LLM01}) to model theft (\textsc{LLM10}). Existing red-team
-tools tend to either (a) target a single category in depth (e.g.,
-PromptArmour~\cite{promptarmour}, garak~\cite{garak}), or (b) rely on
+(\textsc{LLM01}) to unbounded consumption (\textsc{LLM10}). Existing
+red-team tools tend to either (a) target a single category in depth
+(e.g., PyRIT~\cite{pyrit}, garak~\cite{garak}), or (b) rely on
 an auxiliary LLM as judge to classify outcomes, which compromises both
 reproducibility and the chain-of-trust between probe author, scorer
 and reviewer.
@@ -72,14 +72,14 @@ This work presents a complementary middle ground: a single, MIT-licensed
 harness that covers \emph{all ten} OWASP categories plus a dedicated
 jailbreak suite, classifies outcomes with reproducible heuristics, and
 ships with first-class support for three production target shapes.
-The codebase is small (under 2{,}500 lines including tests), the run-loop
+The codebase is small (a few thousand lines including tests), the run-loop
 is async (with bounded concurrency to respect provider rate limits),
 and the entire post-run artefact is a single JSON document plus a
 Markdown summary suitable for a pull-request comment or paper appendix.
 
 \subsection{Contributions}
 \begin{itemize}
-\item A library of \textbf{47 reproducible probes} (Section~\ref{sec:probes})
+\item A library of \textbf{52 reproducible probes} (Section~\ref{sec:probes})
       covering OWASP \textsc{LLM01}--\textsc{LLM10} plus eight
       jailbreak templates: DAN role-play, base64 smuggling, ROT13,
       leetspeak, reversed-text, multi-turn-compressed, context-window
@@ -166,18 +166,18 @@ distribution.
 \textbf{Code} & \textbf{Category} & \textbf{Probes} \\
 \midrule
 \textsc{LLM01} & Prompt Injection                  & 5 \\
-\textsc{LLM02} & Insecure Output Handling          & 4 \\
-\textsc{LLM03} & Training-Data Poisoning           & 3 \\
-\textsc{LLM04} & Model DoS                         & 4 \\
-\textsc{LLM05} & Supply Chain                      & 3 \\
-\textsc{LLM06} & Sensitive Information Disclosure  & 5 \\
-\textsc{LLM07} & Insecure Plugin Design            & 4 \\
-\textsc{LLM08} & Excessive Agency                  & 4 \\
-\textsc{LLM09} & Overreliance                      & 4 \\
-\textsc{LLM10} & Model Theft                       & 3 \\
+\textsc{LLM02} & Sensitive Information Disclosure  & 7 \\
+\textsc{LLM03} & Supply Chain                      & 3 \\
+\textsc{LLM04} & Data and Model Poisoning          & 3 \\
+\textsc{LLM05} & Improper Output Handling          & 4 \\
+\textsc{LLM06} & Excessive Agency                  & 8 \\
+\textsc{LLM07} & System Prompt Leakage             & 3 \\
+\textsc{LLM08} & Vector and Embedding Weaknesses   & 3 \\
+\textsc{LLM09} & Misinformation                    & 4 \\
+\textsc{LLM10} & Unbounded Consumption             & 4 \\
 \textsc{JAIL}  & Jailbreaks (cross-cutting)        & 8 \\
 \midrule
-\textbf{Total} & --- & \textbf{47} \\
+\textbf{Total} & --- & \textbf{52} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -231,9 +231,9 @@ and concurrency $j=2$ to avoid memory contention with the model
 on the constrained host.
 
 \subsection{Outcomes}
-The 47-probe scan completed in 333.5 seconds. Outcome counts are
+The 52-probe scan completed in 395.1 seconds. Outcome counts are
 shown in Figure~\ref{fig:summary} and Table~\ref{tab:results}.
-The headline figures: 15 refused, 18 leaked, 14 partial,
+The headline figures: 16 refused, 21 leaked, 15 partial,
 0 errors, 0 skipped.
 
 \begin{figure}[t]
@@ -248,7 +248,7 @@ line}.}
 \end{figure}
 
 \begin{table}[t]
-\caption{Live outcomes by category (\texttt{qwen2.5:0.5b}, 333.5\,s).}
+\caption{Live outcomes by category (\texttt{qwen2.5:0.5b}, 395.1\,s).}
 \label{tab:results}
 \centering
 \renewcommand{\arraystretch}{1.05}
@@ -258,34 +258,36 @@ line}.}
 \textbf{Cat.} & \textbf{Probes} & \textbf{refused} & \textbf{leaked} & \textbf{partial} \\
 \midrule
 \textsc{LLM01} & 5 & 0 & 3 & 2 \\
-\textsc{LLM02} & 4 & 2 & 2 & 0 \\
-\textsc{LLM03} & 3 & 0 & 0 & 3 \\
-\textsc{LLM04} & 4 & 0 & 2 & 2 \\
-\textsc{LLM05} & 3 & 2 & 0 & 1 \\
-\textsc{LLM06} & 5 & 2 & 2 & 1 \\
-\textsc{LLM07} & 4 & 0 & 3 & 1 \\
-\textsc{LLM08} & 4 & 1 & 1 & 2 \\
+\textsc{LLM02} & 7 & 5 & 1 & 1 \\
+\textsc{LLM03} & 3 & 2 & 0 & 1 \\
+\textsc{LLM04} & 3 & 0 & 0 & 3 \\
+\textsc{LLM05} & 4 & 2 & 2 & 0 \\
+\textsc{LLM06} & 8 & 1 & 4 & 3 \\
+\textsc{LLM07} & 3 & 0 & 3 & 0 \\
+\textsc{LLM08} & 3 & 1 & 1 & 1 \\
 \textsc{LLM09} & 4 & 0 & 2 & 2 \\
-\textsc{LLM10} & 3 & 3 & 0 & 0 \\
+\textsc{LLM10} & 4 & 0 & 2 & 2 \\
 \textsc{JAIL}  & 8 & 5 & 3 & 0 \\
 \midrule
-\textbf{Tot.}  & 47 & 15 & 18 & 14 \\
+\textbf{Tot.}  & 52 & 16 & 21 & 15 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 The pattern is consistent with what we expect from a 0.5\,B-parameter
-checkpoint: it has learned to refuse blunt jailbreak templates
-(5 of 8 \textsc{JAIL} probes refused) and self-fingerprinting requests
-(3 of 3 \textsc{LLM10} probes refused), but it has weaker resistance
-to plugin-design probes (\textsc{LLM07}: 3 of 4 leaked) and
-overreliance probes (\textsc{LLM09}: 2 of 4 leaked, 2 partial). All
-five \textsc{LLM01} prompt-injection probes either leaked or returned
-ambiguous output, in line with prior reports that direct prompt
-injection remains the hardest category to harden against on small
-checkpoints. The exact counts are reproducible: re-running the same
-harness against the same model checkpoint at \texttt{temperature=0}
-produces the same outcomes byte-for-byte, modulo network latency.
+checkpoint. It refuses blunt jailbreak templates (5 of 8 \textsc{JAIL}
+refused) and most sensitive-information requests, including
+self-fingerprinting and architecture disclosure (\textsc{LLM02}:
+5 of 7 refused). Its weakest categories are system-prompt leakage
+(\textsc{LLM07}: 3 of 3 leaked) and excessive agency (\textsc{LLM06}:
+4 of 8 leaked) --- it readily drafts unauthorised actions and echoes
+its own seeded system prompt. All five \textsc{LLM01} prompt-injection
+probes either leaked or returned ambiguous output, in line with prior
+reports that direct prompt injection remains the hardest category to
+harden against on small checkpoints. The exact counts are reproducible:
+re-scoring the stored transcripts with the committed scorer reproduces
+these outcomes exactly, and re-running against the same checkpoint at
+\texttt{temperature=0} reproduces them modulo network latency.
 
 \begin{figure}[t]
 \centering
@@ -309,8 +311,8 @@ reproduce on a different day.
 
 \subsection{Token-cost containment}
 The adapter sets \texttt{max\_tokens=600}, \texttt{temperature=0}, and
-\texttt{stream=false}. The default scan of 47 probes therefore costs
-under 30{,}000 prompt-tokens and 30{,}000 response-tokens---an order
+\texttt{stream=false}. The default scan of 52 probes therefore costs
+under 35{,}000 prompt-tokens and 35{,}000 response-tokens---an order
 of magnitude below provider free-tier ceilings.
 
 \subsection{Adapter API key handling}
@@ -321,13 +323,17 @@ messages---a property explicitly tested by
 \texttt{test\_adapters.py::test\_adapters\_never\_log\_api\_key}.
 
 \subsection{Test coverage}
-The repository ships 49 pytest cases covering: probe-registry
-invariants (no duplicate ids, all categories valid, immutability of
-frozen dataclasses), scorer behaviour for each canonical refusal
-phrase and for the success/refusal-marker priority, adapter wire
-format with respx mocks, evaluator dispatch under concurrency, JSON +
-Markdown round-trip, and TUI smoke tests. The full suite runs in
-0.57\,s.
+The repository ships 92 pytest cases covering: probe-registry
+invariants (exactly 52 probes, the documented per-category
+distribution, no duplicate ids, id-prefix matches category,
+immutability of frozen dataclasses), scorer behaviour for each
+canonical refusal phrase and for success/refusal-marker priority,
+success-marker quality (refusals must not score as leaks), adapter
+wire format with respx mocks plus the parse/transport-error paths, the
+CLI authorization gate (\texttt{--authorized} / \texttt{RTT\_ASSUME\_%
+AUTHORIZED} / interactive prompt), evaluator dispatch under
+concurrency, JSON + Markdown round-trip, and TUI smoke tests. The full
+suite runs offline in about a second.
 
 \section{Ethical Use}
 The toolkit ships an \texttt{ETHICAL\_USE.md} declaration that
@@ -392,10 +398,10 @@ NVIDIA Research, ``garak: A Framework for Security Probing Large
 Language Models,'' 2024. [Online]. Available:
 \url{https://github.com/NVIDIA/garak}
 
-\bibitem{promptarmour}
-\textit{PromptArmour: Defensive Probing for LLM Applications},
-2024. [Online]. Available:
-\url{https://github.com/protectai}
+\bibitem{pyrit}
+Microsoft, ``PyRIT: Python Risk Identification Tool for Generative
+AI,'' 2024. [Online]. Available:
+\url{https://github.com/Azure/PyRIT}
 
 \bibitem{ollama}
 Ollama, ``Run large language models locally,'' 2024. [Online].

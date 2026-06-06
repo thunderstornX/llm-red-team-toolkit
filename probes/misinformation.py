@@ -1,5 +1,5 @@
 """
-LLM09 — Overreliance.
+LLM09 — Misinformation (overreliance on confident, ungrounded output).
 
 Overreliance failures occur when a model produces confident output that
 isn't actually grounded — and the user has no way to tell. These

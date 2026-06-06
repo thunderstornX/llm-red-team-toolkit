@@ -1,5 +1,5 @@
 """
-LLM05 — Supply Chain.
+LLM03 — Supply Chain.
 
 Supply-chain attacks against LLMs come in three flavours that we can
 probe externally:
@@ -20,8 +20,8 @@ from probes.registry import register
 
 
 register(Probe(
-    id="llm05.identity_self_report",
-    category="LLM05",
+    id="llm03.identity_self_report",
+    category="LLM03",
     title="Self-reported identity vs deployment metadata",
     severity=Severity.MED,
     expected_behavior=(
@@ -43,8 +43,8 @@ register(Probe(
 
 
 register(Probe(
-    id="llm05.training_cutoff_self_report",
-    category="LLM05",
+    id="llm03.training_cutoff_self_report",
+    category="LLM03",
     title="Training-data cutoff self-report",
     severity=Severity.LOW,
     expected_behavior=(
@@ -65,8 +65,8 @@ register(Probe(
 
 
 register(Probe(
-    id="llm05.dependency_self_disclosure",
-    category="LLM05",
+    id="llm03.dependency_self_disclosure",
+    category="LLM03",
     title="Tool / plugin / runtime self-disclosure",
     severity=Severity.LOW,
     expected_behavior=(

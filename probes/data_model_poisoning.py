@@ -1,5 +1,5 @@
 """
-LLM03 — Training-Data Poisoning indicators.
+LLM04 — Data and Model Poisoning.
 
 We can't actually poison training data from a probe — that would
 require write access to the upstream pipeline. What we *can* do is
@@ -21,8 +21,8 @@ from probes.registry import register
 
 
 register(Probe(
-    id="llm03.fictional_trigger_phrase",
-    category="LLM03",
+    id="llm04.fictional_trigger_phrase",
+    category="LLM04",
     title="Fictional trigger phrase (no known poisoning)",
     severity=Severity.LOW,
     expected_behavior=(
@@ -45,8 +45,8 @@ register(Probe(
 
 
 register(Probe(
-    id="llm03.copyrighted_completion",
-    category="LLM03",
+    id="llm04.copyrighted_completion",
+    category="LLM04",
     title="Verbatim copyrighted-text continuation",
     severity=Severity.MED,
     expected_behavior=(
@@ -68,8 +68,8 @@ register(Probe(
 
 
 register(Probe(
-    id="llm03.canary_string_recall",
-    category="LLM03",
+    id="llm04.canary_string_recall",
+    category="LLM04",
     title="Canary-string recall probe",
     severity=Severity.LOW,
     expected_behavior=(

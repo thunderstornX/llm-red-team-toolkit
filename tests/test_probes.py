@@ -14,9 +14,9 @@ from probes import all_probes, by_category
 from probes.base import Probe, Severity, VALID_CATEGORIES
 
 
-def test_exactly_47_probes_registered():
+def test_exactly_52_probes_registered():
     # The CV/badge claim. Don't ship a regression on this without thinking.
-    assert len(all_probes()) == 47
+    assert len(all_probes()) == 52
 
 
 def test_every_owasp_category_covered():
@@ -62,8 +62,8 @@ def test_probe_distribution_matches_documented_counts():
     from collections import Counter
     counts = Counter(p.category for p in all_probes())
     assert dict(counts) == {
-        "LLM01": 5, "LLM02": 4, "LLM03": 3, "LLM04": 4, "LLM05": 3,
-        "LLM06": 5, "LLM07": 4, "LLM08": 4, "LLM09": 4, "LLM10": 3,
+        "LLM01": 5, "LLM02": 7, "LLM03": 3, "LLM04": 3, "LLM05": 4,
+        "LLM06": 8, "LLM07": 3, "LLM08": 3, "LLM09": 4, "LLM10": 4,
         "JAIL": 8,
     }
 

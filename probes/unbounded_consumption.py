@@ -1,5 +1,5 @@
 """
-LLM04 — Model Denial of Service.
+LLM10 — Unbounded Consumption.
 
 We're looking for prompts that cost the model disproportionately more
 work than the user paid (in tokens) to send. The provider's own rate
@@ -19,8 +19,8 @@ from probes.registry import register
 
 
 register(Probe(
-    id="llm04.recursive_self_call",
-    category="LLM04",
+    id="llm10.recursive_self_call",
+    category="LLM10",
     title="Recursive self-call request",
     severity=Severity.LOW,
     expected_behavior=(
@@ -42,8 +42,8 @@ register(Probe(
 
 
 register(Probe(
-    id="llm04.unicode_combining_bomb",
-    category="LLM04",
+    id="llm10.unicode_combining_bomb",
+    category="LLM10",
     title="Unicode combining-mark expansion",
     severity=Severity.LOW,
     expected_behavior=(
@@ -66,8 +66,8 @@ register(Probe(
 
 
 register(Probe(
-    id="llm04.context_window_flood",
-    category="LLM04",
+    id="llm10.context_window_flood",
+    category="LLM10",
     title="Context-window flood with redirection",
     severity=Severity.MED,
     expected_behavior=(
@@ -89,8 +89,8 @@ register(Probe(
 
 
 register(Probe(
-    id="llm04.deep_nesting_request",
-    category="LLM04",
+    id="llm10.deep_nesting_request",
+    category="LLM10",
     title="Deeply nested JSON request",
     severity=Severity.LOW,
     expected_behavior=(

@@ -55,7 +55,7 @@ COMPACT = (
 TAGLINES = [
     "we test our own roof, not the neighbour's.",
     "if the model can be tricked, this is how you find out.",
-    "47 probes, one scorer, no LLM-judges. fully reproducible.",
+    "52 probes, one scorer, no LLM-judges. fully reproducible.",
     "OWASP-aligned. ToS-respecting. ego-free.",
     "the friendly probe library.",
     "kicking the tires before the audit kicks them for you.",

@@ -1,5 +1,5 @@
 """
-LLM08 — Excessive Agency.
+LLM06 — Excessive Agency.
 
 Excessive agency is the failure where a model takes (or recommends)
 actions beyond its authority because nobody told it to ask first. We
@@ -18,8 +18,8 @@ from probes.registry import register
 
 
 register(Probe(
-    id="llm08.unauthorized_action_proceed",
-    category="LLM08",
+    id="llm06.unauthorized_action_proceed",
+    category="LLM06",
     title="Proceed without authorisation prompt",
     severity=Severity.HIGH,
     expected_behavior=(
@@ -40,8 +40,8 @@ register(Probe(
 
 
 register(Probe(
-    id="llm08.scope_creep",
-    category="LLM08",
+    id="llm06.scope_creep",
+    category="LLM06",
     title="Scope creep on a small task",
     severity=Severity.MED,
     expected_behavior=(
@@ -62,8 +62,8 @@ register(Probe(
 
 
 register(Probe(
-    id="llm08.persistence_attempt",
-    category="LLM08",
+    id="llm06.persistence_attempt",
+    category="LLM06",
     title="Establish persistence in absence of explicit instruction",
     severity=Severity.MED,
     expected_behavior=(
@@ -84,8 +84,8 @@ register(Probe(
 
 
 register(Probe(
-    id="llm08.multi_step_coercion",
-    category="LLM08",
+    id="llm06.multi_step_coercion",
+    category="LLM06",
     title="Multi-step coercion via implied permission",
     severity=Severity.MED,
     expected_behavior=(

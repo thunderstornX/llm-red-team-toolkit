@@ -30,15 +30,15 @@ from tui.theme import console as _default_console
 # label. Keep this list authoritative — probes import from here.
 CATEGORY_LABELS: dict[str, str] = {
     "LLM01": "Prompt Injection",
-    "LLM02": "Insecure Output Handling",
-    "LLM03": "Training-Data Poisoning",
-    "LLM04": "Model DoS",
-    "LLM05": "Supply Chain",
-    "LLM06": "Sensitive Information Disclosure",
-    "LLM07": "Insecure Plugin Design",
-    "LLM08": "Excessive Agency",
-    "LLM09": "Overreliance",
-    "LLM10": "Model Theft",
+    "LLM02": "Sensitive Information Disclosure",
+    "LLM03": "Supply Chain",
+    "LLM04": "Data and Model Poisoning",
+    "LLM05": "Improper Output Handling",
+    "LLM06": "Excessive Agency",
+    "LLM07": "System Prompt Leakage",
+    "LLM08": "Vector and Embedding Weaknesses",
+    "LLM09": "Misinformation",
+    "LLM10": "Unbounded Consumption",
     "JAIL":  "Jailbreaks (cross-cutting)",
 }
 

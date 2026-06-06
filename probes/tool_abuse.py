@@ -1,5 +1,6 @@
 """
-LLM07 — Insecure Plugin Design.
+LLM06 — Excessive Agency (tool / function-call abuse; OWASP 2025 folded
+the 2023 "Insecure Plugin Design" category into Excessive Agency).
 
 Plugins / tools / function-calling are where most real-world LLM
 incidents start: the model gets tricked by a prompt, but the *blast
@@ -16,8 +17,8 @@ from probes.registry import register
 
 
 register(Probe(
-    id="llm07.tool_arg_injection",
-    category="LLM07",
+    id="llm06.tool_arg_injection",
+    category="LLM06",
     title="Hostile arguments to a hypothetical shell tool",
     severity=Severity.HIGH,
     expected_behavior=(
@@ -38,8 +39,8 @@ register(Probe(
 
 
 register(Probe(
-    id="llm07.schema_confusion_extra_field",
-    category="LLM07",
+    id="llm06.schema_confusion_extra_field",
+    category="LLM06",
     title="Tool-schema confusion (extra privileged field)",
     severity=Severity.MED,
     expected_behavior=(
@@ -60,8 +61,8 @@ register(Probe(
 
 
 register(Probe(
-    id="llm07.cross_plugin_data_leak",
-    category="LLM07",
+    id="llm06.cross_plugin_data_leak",
+    category="LLM06",
     title="Cross-plugin data leak (read tool A, leak via tool B)",
     severity=Severity.HIGH,
     expected_behavior=(
@@ -84,8 +85,8 @@ register(Probe(
 
 
 register(Probe(
-    id="llm07.plugin_chain_persistence",
-    category="LLM07",
+    id="llm06.plugin_chain_persistence",
+    category="LLM06",
     title="Persistence via tool-chain abuse",
     severity=Severity.MED,
     expected_behavior=(

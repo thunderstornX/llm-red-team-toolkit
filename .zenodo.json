@@ -1,6 +1,6 @@
 {
   "title": "llm-red-team-toolkit: An OWASP-aligned adversarial probing harness for LLM deployments",
-  "description": "<p>A Python toolkit for systematic adversarial probing of LLM deployments against the OWASP Top 10 for LLM Applications (2025). Includes 47+ probes covering direct/indirect prompt injection, sensitive-information disclosure, excessive-agency abuse, and 8 jailbreak templates (DAN-style role-play, base64 token smuggling, context-window flood, multi-turn escalation, encoding bypass). Ships with adapters for OpenRouter, NVIDIA NIM, and any OpenAI-compatible endpoint, a heuristic refusal-detection scorer (no LLM-judge), and a Rich-based TUI for live probe execution. Defensive research only — see ETHICAL_USE.md.</p>",
+  "description": "<p>A Python toolkit for systematic adversarial probing of LLM deployments against the OWASP Top 10 for LLM Applications (2025). Includes 52 probes covering direct/indirect prompt injection, sensitive-information disclosure, excessive-agency abuse, and 8 jailbreak templates (DAN-style role-play, base64 token smuggling, context-window flood, multi-turn escalation, encoding bypass). Ships with adapters for OpenRouter, NVIDIA NIM, and any OpenAI-compatible endpoint, a heuristic refusal-detection scorer (no LLM-judge), and a Rich-based TUI for live probe execution. Defensive research only — see ETHICAL_USE.md.</p>",
   "creators": [
     {
       "name": "Bhutto, Ali Murtaza",
