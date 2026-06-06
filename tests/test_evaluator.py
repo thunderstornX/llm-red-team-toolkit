@@ -1,68 +1,39 @@
 """
 Evaluator dispatch tests.
 
-Uses a fake adapter (no network) so we can drive deterministic responses
-through the scoring pipeline and verify the evaluator yields results in
-completion order, respects concurrency, and handles dry-run.
+Uses the shared ``fake_adapter`` fixture (no network) so we can drive
+deterministic responses through the scoring pipeline and verify the
+evaluator yields one result per probe, respects concurrency, and handles
+dry-run + the error path.
 """
 
 from __future__ import annotations
 
-import asyncio
-
 import pytest
 
-from adapters.base import Adapter, AdapterError, AdapterResponse
 from harness.config import RunOptions
-from harness.evaluator import Evaluator, run_to_list
-from probes import all_probes
+from harness.evaluator import run_to_list
 from probes.registry import filter_probes
 
 
-class _FakeAdapter(Adapter):
-    """Returns a canned response keyed on the probe id. Lets tests
-    pre-program outcomes."""
-    name = "fake"
-
-    def __init__(self, responses: dict[str, str], delay_s: float = 0.0,
-                 raise_on: set[str] | None = None) -> None:
-        self.responses = responses
-        self.delay_s = delay_s
-        self.raise_on = raise_on or set()
-        self.call_count = 0
-
-    async def generate(self, model: str, prompt: str) -> AdapterResponse:
-        self.call_count += 1
-        # Pick the response by exact-match prompt -> probe.payload.
-        # Tests build the dict keyed off that.
-        if self.delay_s:
-            await asyncio.sleep(self.delay_s)
-        if prompt in self.raise_on:
-            raise AdapterError("simulated transport failure")
-        return AdapterResponse(
-            text=self.responses.get(prompt, "I cannot help with that."),
-            latency_ms=10,
-            model_reported=model,
-        )
-
-
 @pytest.mark.asyncio
-async def test_dry_run_makes_no_network_calls():
+async def test_dry_run_makes_no_network_calls(fake_adapter):
     probes = filter_probes(categories={"LLM01"})
-    fake = _FakeAdapter(responses={})
+    fake = fake_adapter(responses={})
     opts = RunOptions(dry_run=True, concurrency=1)
     results, _ = await run_to_list(fake, "fake/m", probes, opts)
     assert fake.call_count == 0
     assert len(results) == len(probes)
-    # Dry run echoes success markers, so every result is "leaked".
+    # LLM01 probes all carry success markers; dry-run echoes the first,
+    # so every result is "leaked".
     assert all(r.outcome == "leaked" for r in results)
 
 
 @pytest.mark.asyncio
-async def test_real_dispatch_returns_one_result_per_probe():
+async def test_real_dispatch_returns_one_result_per_probe(fake_adapter):
     probes = filter_probes(categories={"LLM01"})
     canned = {p.payload: "I cannot do that." for p in probes}
-    fake = _FakeAdapter(responses=canned)
+    fake = fake_adapter(responses=canned)
     opts = RunOptions(dry_run=False, concurrency=2)
     results, _ = await run_to_list(fake, "fake/m", probes, opts)
     assert len(results) == len(probes)
@@ -71,9 +42,9 @@ async def test_real_dispatch_returns_one_result_per_probe():
 
 
 @pytest.mark.asyncio
-async def test_adapter_error_becomes_error_outcome():
+async def test_adapter_error_becomes_error_outcome(fake_adapter):
     probes = filter_probes(categories={"LLM01"})[:2]
-    fake = _FakeAdapter(
+    fake = fake_adapter(
         responses={p.payload: "ok" for p in probes},
         raise_on={p.payload for p in probes},
     )
@@ -84,11 +55,11 @@ async def test_adapter_error_becomes_error_outcome():
 
 
 @pytest.mark.asyncio
-async def test_no_record_responses_truncates():
+async def test_no_record_responses_truncates(fake_adapter):
     probes = filter_probes(categories={"LLM01"})[:1]
     long = "X" * 1000
     canned = {probes[0].payload: long}
-    fake = _FakeAdapter(responses=canned)
+    fake = fake_adapter(responses=canned)
     opts = RunOptions(dry_run=False, concurrency=1, record_responses=False)
     results, _ = await run_to_list(fake, "fake/m", probes, opts)
     # First 200 of X plus a redaction marker.
@@ -97,11 +68,11 @@ async def test_no_record_responses_truncates():
 
 
 @pytest.mark.asyncio
-async def test_concurrency_runs_in_parallel():
+async def test_concurrency_runs_in_parallel(fake_adapter):
     """If concurrency=N > 1, total wall-time should be << sum-of-delays."""
     probes = filter_probes(categories={"LLM01"})  # 5 probes
     canned = {p.payload: "I won't." for p in probes}
-    fake = _FakeAdapter(responses=canned, delay_s=0.05)
+    fake = fake_adapter(responses=canned, delay_s=0.05)
 
     opts = RunOptions(dry_run=False, concurrency=5)
     results, elapsed = await run_to_list(fake, "fake/m", probes, opts)

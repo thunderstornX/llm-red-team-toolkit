@@ -1,25 +1,24 @@
 #!/usr/bin/env python3
 """
-Render the TUI to SVG (and PNG) so the paper has real screenshots.
+Render the TUI to PNG so the paper has real screenshots.
 
-Each figure is a *recorded* Rich Console session that we then export as
-SVG; the SVG is rasterised to PNG for the IEEE paper. The output of
-this script is reproducible — re-running it on the same machine
-produces byte-identical SVG and pixel-similar PNG.
+Each figure is a *recorded* Rich Console session: we capture the ANSI
+output and rasterise it to PNG via a locally-installed monospace font
+(see ``_export``). Driving the PNG directly from the ANSI capture is
+more reproducible offline than the old SVG-with-webfont path, which
+needed a font cache we can't assume is present.
 
 Outputs (relative to repo root):
 
-    paper/figures/banner.svg     +  paper/figures/banner.png
-    paper/figures/dashboard.svg  +  paper/figures/dashboard.png
-    paper/figures/summary.svg    +  paper/figures/summary.png
-    paper/figures/list.svg       +  paper/figures/list.png
+    paper/figures/banner.png
+    paper/figures/dashboard.png
+    paper/figures/summary.png
+    paper/figures/list.png
 """
 
 from __future__ import annotations
 
 import json
-import shutil
-import subprocess  # nosec B404 -- only used to invoke `convert`, hard-coded literal argv
 import sys
 from pathlib import Path
 

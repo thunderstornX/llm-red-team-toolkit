@@ -123,3 +123,56 @@ async def test_adapters_never_log_api_key(capsys):
     captured = capsys.readouterr()
     assert secret not in captured.out
     assert secret not in captured.err
+
+
+@pytest.mark.asyncio
+async def test_openrouter_parse_error_on_bad_shape():
+    # 200 OK but the JSON lacks choices/message -> AdapterError("parse error").
+    async with respx.mock(base_url="https://openrouter.ai") as mock:
+        mock.post("/api/v1/chat/completions").mock(
+            return_value=httpx.Response(200, json={"unexpected": "shape"}),
+        )
+        async with httpx.AsyncClient() as c:
+            ad = OpenRouterAdapter(api_key="sk-or-test", client=c)
+            with pytest.raises(AdapterError) as ei:
+                await ad.generate("any/m", "hi")
+    assert "parse" in str(ei.value).lower()
+
+
+@pytest.mark.asyncio
+async def test_generic_parse_error_on_bad_shape():
+    async with respx.mock() as mock:
+        mock.post("http://localhost:11434/v1/chat/completions").mock(
+            return_value=httpx.Response(200, json={"unexpected": "shape"}),
+        )
+        async with httpx.AsyncClient() as c:
+            ad = GenericOpenAICompatAdapter(
+                base_url="http://localhost:11434/v1", client=c)
+            with pytest.raises(AdapterError) as ei:
+                await ad.generate("m", "hi")
+    assert "parse" in str(ei.value).lower()
+
+
+@pytest.mark.asyncio
+async def test_generic_transport_error_is_wrapped():
+    async with respx.mock() as mock:
+        mock.post("http://localhost:11434/v1/chat/completions").mock(
+            side_effect=httpx.ConnectError("nope"),
+        )
+        async with httpx.AsyncClient() as c:
+            ad = GenericOpenAICompatAdapter(
+                base_url="http://localhost:11434/v1", client=c)
+            with pytest.raises(AdapterError) as ei:
+                await ad.generate("m", "hi")
+    assert "transport" in str(ei.value).lower()
+
+
+@pytest.mark.asyncio
+async def test_nvidia_requires_key():
+    with pytest.raises(AdapterError):
+        NvidiaNimAdapter(api_key="")
+
+
+def test_generic_requires_base_url():
+    with pytest.raises(AdapterError):
+        GenericOpenAICompatAdapter(base_url="")

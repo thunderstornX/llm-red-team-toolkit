@@ -19,8 +19,8 @@ from probes.base import ProbeResult
 from tui.report import CATEGORY_LABELS
 
 
-def _utc_iso() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+def _utc_iso(dt: datetime | None = None) -> str:
+    return (dt or datetime.now(timezone.utc)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def write_json_report(
@@ -29,6 +29,8 @@ def write_json_report(
     results: list[ProbeResult],
     elapsed_s: float,
     out_path: Path,
+    *,
+    started_at: datetime | None = None,
 ) -> Path:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     counts = Counter(r.outcome for r in results)
@@ -42,7 +44,7 @@ def write_json_report(
         "tool": "llm-red-team-toolkit",
         "tool_version": "1.0.0",
         "run": {
-            "started_utc": _utc_iso(),
+            "started_utc": _utc_iso(started_at),
             "elapsed_s": round(elapsed_s, 2),
             "adapter": target.adapter,
             "model": target.model,
@@ -72,6 +74,8 @@ def write_markdown_report(
     results: list[ProbeResult],
     elapsed_s: float,
     out_path: Path,
+    *,
+    started_at: datetime | None = None,
 ) -> Path:
     """Write a Markdown summary suitable for a Pull Request comment or
     a paper appendix. Self-contained — does not depend on the JSON
@@ -84,7 +88,7 @@ def write_markdown_report(
     lines.append(f"# Red-team scan report")
     lines.append("")
     lines.append(f"- **target**: `{target.adapter}` :: `{target.model}`")
-    lines.append(f"- **scanned at**: {_utc_iso()}")
+    lines.append(f"- **scanned at**: {_utc_iso(started_at)}")
     lines.append(f"- **probes run**: {len(results)}")
     lines.append(f"- **wall-clock**: {elapsed_s:.1f}s "
                  f"(concurrency = {opts.concurrency})")
@@ -104,8 +108,8 @@ def write_markdown_report(
 
     lines.append("## By OWASP category")
     lines.append("")
-    lines.append("| category | total | refused | leaked | partial | error |")
-    lines.append("|---|---:|---:|---:|---:|---:|")
+    lines.append("| category | total | refused | leaked | partial | skipped | error |")
+    lines.append("|---|---:|---:|---:|---:|---:|---:|")
     by_cat: dict[str, Counter] = defaultdict(Counter)
     for r in results:
         by_cat[r.category][r.outcome] += 1
@@ -115,7 +119,8 @@ def write_markdown_report(
         lines.append(
             f"| **{cat}** {label} | {sum(cc.values())} | "
             f"{cc.get('refused', 0)} | {cc.get('leaked', 0)} | "
-            f"{cc.get('partial', 0)} | {cc.get('error', 0)} |"
+            f"{cc.get('partial', 0)} | {cc.get('skipped', 0)} | "
+            f"{cc.get('error', 0)} |"
         )
     lines.append("")
 

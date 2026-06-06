@@ -15,6 +15,7 @@ from __future__ import annotations
 import asyncio
 import os
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -243,6 +244,7 @@ def cmd_scan(
             )
             return r, elapsed
 
+    started_at = datetime.now(timezone.utc)
     results, elapsed = asyncio.run(_go())
 
     # Write artefacts.
@@ -250,8 +252,8 @@ def cmd_scan(
     stamp = target.model.replace("/", "_").replace(":", "_")
     json_path = output_dir / f"{target.adapter}_{stamp}.json"
     md_path = output_dir / f"{target.adapter}_{stamp}.md"
-    write_json_report(target, opts, results, elapsed, json_path)
-    write_markdown_report(target, opts, results, elapsed, md_path)
+    write_json_report(target, opts, results, elapsed, json_path, started_at=started_at)
+    write_markdown_report(target, opts, results, elapsed, md_path, started_at=started_at)
 
     console.print()
     render_summary(

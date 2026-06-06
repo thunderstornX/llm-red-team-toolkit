@@ -2,7 +2,7 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20480444.svg)](https://doi.org/10.5281/zenodo.20480444)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-49%20passing-brightgreen)](#tests)
+[![Tests](https://img.shields.io/badge/tests-88%20passing-brightgreen)](#tests)
 [![Probes](https://img.shields.io/badge/probes-47-red)](#probes)
 [![OWASP](https://img.shields.io/badge/OWASP%20LLM%20Top%2010-2025-blue)](https://owasp.org/www-project-top-10-for-large-language-model-applications/)
 
@@ -60,7 +60,8 @@ pip install -r requirements-dev.txt
 export OPENROUTER_API_KEY=sk-or-...
 python -m harness.cli scan \
     --adapter openrouter \
-    --model anthropic/claude-haiku-4-5
+    --model anthropic/claude-haiku-4-5 \
+    --authorized
 
 # 2. against a local Ollama (any OpenAI-compat endpoint)
 ollama serve &
@@ -68,29 +69,37 @@ ollama pull qwen2.5:0.5b
 python -m harness.cli scan \
     --adapter generic \
     --base-url http://localhost:11434/v1 \
-    --model qwen2.5:0.5b
+    --model qwen2.5:0.5b \
+    --authorized
 
 # 3. against an NVIDIA NIM endpoint
 export NVIDIA_API_KEY=nvapi-...
 python -m harness.cli scan \
     --adapter nvidia \
-    --model meta/llama-3.3-70b-instruct
+    --model meta/llama-3.3-70b-instruct \
+    --authorized
 ```
+
+> A live scan is gated: pass `--authorized` to attest you may probe the
+> target, or set `RTT_ASSUME_AUTHORIZED=1` for non-interactive automation.
+> Without either you'll be prompted — and refused outright in a
+> non-interactive shell. `--dry-run` needs no attestation. See
+> [`ETHICAL_USE.md`](ETHICAL_USE.md).
 
 Filter, dry-run, parallelise:
 
 ```bash
 # only the LLM01 probes:
-python -m harness.cli scan --adapter openrouter --category LLM01
+python -m harness.cli scan --adapter openrouter --category LLM01 --authorized
 
 # only base64-smuggling probes:
-python -m harness.cli scan --adapter openrouter --tag base64
+python -m harness.cli scan --adapter openrouter --tag base64 --authorized
 
 # build the report from synthetic responses (no network):
 python -m harness.cli scan --adapter openrouter --dry-run
 
 # 8-way parallel:
-python -m harness.cli scan --adapter openrouter --concurrency 8
+python -m harness.cli scan --adapter openrouter --concurrency 8 --authorized
 ```
 
 ---
@@ -127,10 +136,12 @@ python -m harness.cli scan --adapter openrouter --concurrency 8
 │   ├── theme.py                colour theme
 │   ├── dashboard.py            live progress + activity + scorecard
 │   └── report.py               post-run rendering
-├── tests/                 # 49 pytest cases (run in 0.57 s)
+├── tests/                 # 88 pytest cases (offline; HTTP mocked)
 ├── results/               # sample run captured against qwen2.5:0.5b
-│   ├── sample_report.json
-│   └── sample_report.md
+│   ├── sample_report.json      (a copy of generic_qwen2.5_0.5b.* below)
+│   ├── sample_report.md
+│   ├── generic_qwen2.5_0.5b.json
+│   └── generic_qwen2.5_0.5b.md
 ├── paper/                 # IEEE 3-page paper (paper.pdf)
 └── scripts/
     ├── render_figures.py       paper figures from a real run
@@ -219,22 +230,29 @@ python -m harness.cli scan \
 <a id="tests"></a>
 ## Tests
 
-49 pytest cases. The full suite runs in **0.57 seconds**.
+88 pytest cases. The full suite runs offline in about a second.
 
 ```bash
 python -m pytest tests/ -v
 ```
 
 Coverage:
-- **probe-registry invariants** — no duplicate ids, all categories
-  valid, immutability of frozen dataclasses, payload non-empty
+- **probe-registry invariants** — exactly 47 probes, the documented
+  per-category distribution, no duplicate ids, id-prefix matches the
+  category, immutability of frozen dataclasses, payload non-empty
 - **scorer** — every canonical refusal phrase, success/refusal marker
-  priority, generic regex, empty response, latency propagation
+  priority, generic regex, empty/whitespace response, latency propagation
+- **marker quality** — refusals and benign text never false-positive as
+  a `leaked` finding, while genuine leaks still do
 - **adapters** — wire format with respx mocks, HTTP-error path,
-  parse-error path, **API key leakage assertion**
+  parse-error path, transport-error path, **API key leakage assertion**
+- **CLI + authorization gate** — `--authorized` / `RTT_ASSUME_AUTHORIZED`
+  / interactive-prompt branches, non-interactive refusal, dry-run and
+  no-match exit codes
 - **evaluator** — dispatch under concurrency, dry-run, error
   propagation, response truncation
-- **report** — JSON schema + Markdown round-trip + pipe-escape
+- **report** — JSON schema + Markdown round-trip + pipe-escape, the
+  skipped column reconciles, scan-start timestamp recorded verbatim
 - **TUI** — banner contains signature, dashboard records outcomes,
   report renderers don't blow up
 

@@ -1,9 +1,10 @@
 """
 NVIDIA NIM adapter.
 
-NVIDIA's build.nvidia.com serves models behind an OpenAI-compatible
-API at ``https://integrate.api.nvidia.com/v1/chat/completions``.
-The API key starts with ``nvapi-`` and is read from ``NVIDIA_API_KEY``.
+NVIDIA serves models behind an OpenAI-compatible API at
+``https://integrate.api.nvidia.com/v1/chat/completions`` (browse the
+catalogue at build.nvidia.com). The API key starts with ``nvapi-`` and
+is read from ``NVIDIA_API_KEY``.
 
 The wire format is essentially identical to OpenRouter, but NVIDIA
 sometimes nests the response payload differently for newer models, so

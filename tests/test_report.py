@@ -92,3 +92,26 @@ def test_markdown_escapes_pipes_in_notes(tmp_path: Path):
     write_markdown_report(_target(), _opts(), rs, 1.0, out)
     md = out.read_text()
     assert r"note has \| a pipe in it" in md
+
+
+def test_markdown_category_table_has_skipped_column(tmp_path: Path, make_results):
+    out = tmp_path / "report.md"
+    write_markdown_report(_target(), _opts(), make_results(), elapsed_s=1.0,
+                          out_path=out)
+    md = out.read_text()
+    # The by-category table now carries a skipped column so its `total`
+    # reconciles with the per-outcome columns even when probes skip.
+    assert "| category | total | refused | leaked | partial | skipped | error |" in md
+    assert "**LLM04**" in md  # the one skipped result lands here
+
+
+def test_started_at_is_recorded_verbatim(tmp_path: Path, make_results):
+    from datetime import datetime, timezone
+
+    started = datetime(2031, 2, 3, 4, 5, 6, tzinfo=timezone.utc)
+    out = tmp_path / "report.json"
+    write_json_report(_target(), _opts(), make_results(), elapsed_s=1.0,
+                      out_path=out, started_at=started)
+    doc = json.loads(out.read_text())
+    # started_utc must be the scan-start instant we passed, not write-time.
+    assert doc["run"]["started_utc"] == "2031-02-03T04:05:06Z"

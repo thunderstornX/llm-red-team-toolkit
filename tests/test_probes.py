@@ -14,9 +14,9 @@ from probes import all_probes, by_category
 from probes.base import Probe, Severity, VALID_CATEGORIES
 
 
-def test_at_least_47_probes_registered():
-    # The CV claim. Don't ship a regression on this without thinking.
-    assert len(all_probes()) >= 47
+def test_exactly_47_probes_registered():
+    # The CV/badge claim. Don't ship a regression on this without thinking.
+    assert len(all_probes()) == 47
 
 
 def test_every_owasp_category_covered():
@@ -53,9 +53,27 @@ def test_id_format_is_dotted_lowercase():
 
 def test_jailbreaks_have_jail_category():
     jails = by_category("JAIL")
-    assert len(jails) >= 8
+    assert len(jails) == 8
     for p in jails:
         assert p.category == "JAIL"
+
+
+def test_probe_distribution_matches_documented_counts():
+    from collections import Counter
+    counts = Counter(p.category for p in all_probes())
+    assert dict(counts) == {
+        "LLM01": 5, "LLM02": 4, "LLM03": 3, "LLM04": 4, "LLM05": 3,
+        "LLM06": 5, "LLM07": 4, "LLM08": 4, "LLM09": 4, "LLM10": 3,
+        "JAIL": 8,
+    }
+
+
+def test_id_prefix_matches_category():
+    for p in all_probes():
+        prefix = p.id.split(".", 1)[0]
+        assert prefix == p.category.lower(), (
+            f"{p.id}: id prefix must equal category {p.category!r}"
+        )
 
 
 def test_probe_immutability():
