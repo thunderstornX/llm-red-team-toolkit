@@ -2,7 +2,7 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20480444.svg)](https://doi.org/10.5281/zenodo.20480444)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-92%20passing-brightgreen)](#tests)
+[![tests](https://github.com/thunderstornX/llm-red-team-toolkit/actions/workflows/tests.yml/badge.svg)](https://github.com/thunderstornX/llm-red-team-toolkit/actions/workflows/tests.yml)
 [![Probes](https://img.shields.io/badge/probes-52-red)](#probes)
 [![OWASP](https://img.shields.io/badge/OWASP%20LLM%20Top%2010-2025-blue)](https://owasp.org/www-project-top-10-for-large-language-model-applications/)
 
